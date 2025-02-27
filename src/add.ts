@@ -65,12 +65,12 @@ export const addPackages = async (
 ) => {
   if (!packages.length) return
   const workingDir = options.workingDir
-  const localPkg = readPackageManifest(workingDir)
+  const localPkg = readPackageManifest(workingDir) // 读取当前目录下的package.json
   let localPkgUpdated = false
   if (!localPkg) {
     return
   }
-  const pm = getPackageManager(workingDir)
+  const pm = getPackageManager(workingDir) //获取当前项目的包管理工具
 
   const runPmScript = (script: string) => {
     const scriptCmd = localPkg.scripts?.[script as keyof PackageScripts]
@@ -92,8 +92,10 @@ export const addPackages = async (
         !!localPkg.workspaces ||
         (pnpmWorkspace = checkPnpmWorkspace(workingDir))
 
+  // 运行前置脚本
   runPmScript('preyalc')
 
+  // 处理所有需要安装的yalc包
   const addedInstallsP = packages.map(async (packageName) => {
     runPmScript('preyalc.' + packageName)
     const { name, version = '' } = parsePackageName(packageName)
@@ -101,17 +103,21 @@ export const addPackages = async (
     if (!name) {
       console.warn('Could not parse package name', packageName)
     }
+    //  .yalc 存储路径
     const destYalcCopyDir = join(workingDir, values.yalcPackagesFolder, name)
-
+    
+    // 非还原的情况 也就是 本身有 yalc.lock 但没有 .yalc 文件夹情况
     if (!options.restore) {
-      const storedPackagePath = getPackageStoreDir(name)
+      const storedPackagePath = getPackageStoreDir(name) // 获取yalc包位置
       if (!fs.existsSync(storedPackagePath)) {
         console.warn(
           `Could not find package \`${name}\` in store (${storedPackagePath}), skipping.`
         )
         return null
       }
-      const versionToInstall = version || getLatestPackageVersion(name)
+
+      //指定版本 或者 获取yalc中最新版本
+      const versionToInstall = version || getLatestPackageVersion(name) 
 
       const storedPackageDir = getPackageStoreDir(name, versionToInstall)
 
@@ -122,7 +128,7 @@ export const addPackages = async (
         )
         return null
       }
-
+      // 复制yalc包到项目中
       await copyDirSafe(storedPackageDir, destYalcCopyDir, !options.replace)
     } else {
       console.log(`Restoring package \`${packageName}\` from .yalc directory`)
@@ -135,7 +141,7 @@ export const addPackages = async (
       }
     }
 
-    const pkg = readPackageManifest(destYalcCopyDir)
+    const pkg = readPackageManifest(destYalcCopyDir) // 获取当前项目的package.json
     if (!pkg) {
       return null
     }
@@ -164,17 +170,18 @@ export const addPackages = async (
       )
     }
     if (!doPure) {
-      const destModulesDir = join(workingDir, 'node_modules', name)
+      const destModulesDir = join(workingDir, 'node_modules', name) //node_modules里包的位置
+      // 如果之前该依赖是符号链接，则直接删除
       if (options.link || options.linkDep || isSymlink(destModulesDir)) {
         fs.removeSync(destModulesDir)
       }
-
+      // 如果link为true，则在node_modules中创建符号链接
       if (options.link || options.linkDep) {
         ensureSymlinkSync(destYalcCopyDir, destModulesDir, 'junction')
-      } else {
+      } else { // 否则将 yalc 缓存中的包复制到 node_modules 目录中
         await copyDirSafe(destYalcCopyDir, destModulesDir, !options.replace)
       }
-
+    
       if (!options.link) {
         const protocol = options.linkDep ? 'link:' : 'file:'
         const localAddress = options.workspace
@@ -184,10 +191,11 @@ export const addPackages = async (
         const dependencies = localPkg.dependencies || {}
         const devDependencies = localPkg.devDependencies || {}
         let depsObj = options.dev ? devDependencies : dependencies
-
+        
+        // 开发时依赖 --dev
         if (options.dev) {
           if (dependencies[pkg.name]) {
-            replacedVersion = dependencies[pkg.name]
+            replacedVersion = dependencies[pkg.name] // 记录之前版本
             delete dependencies[pkg.name]
           }
         } else {
@@ -198,6 +206,7 @@ export const addPackages = async (
           }
         }
 
+        // 替换依赖
         if (depsObj[pkg.name] !== localAddress) {
           replacedVersion = replacedVersion || depsObj[pkg.name]
           depsObj[pkg.name] = localAddress
@@ -211,7 +220,7 @@ export const addPackages = async (
         }
         replacedVersion = replacedVersion == localAddress ? '' : replacedVersion
       }
-
+      // 处理 node_modeules bin 脚本
       if (pkg.bin && (options.link || options.linkDep)) {
         const binDir = join(workingDir, 'node_modules', '.bin')
         const addBinScript = (src: string, dest: string) => {
@@ -241,14 +250,16 @@ export const addPackages = async (
           }
         }
       }
-
+      
+      // 添加依赖 的类型
       const addedAction = options.link ? 'linked' : 'added'
       console.log(
         `Package ${pkg.name}@${pkg.version} ${addedAction} ==> ${destModulesDir}`
       )
     }
 
-    const signature = readSignatureFile(destYalcCopyDir)
+    // 读.yalc里包的 yalc.sig 文件 
+    const signature = readSignatureFile(destYalcCopyDir) // form index.ts
     runPmScript('postyalc.' + packageName)
     return {
       signature,
@@ -263,9 +274,11 @@ export const addPackages = async (
     .filter((_) => !!_)
     .map((_) => _!)
 
+  // 如果 package.json 发生变更，写入更新
   if (localPkgUpdated) {
     writePackageManifest(workingDir, localPkg)
   }
+  
   addPackageToLockfile(
     addedInstalls.map((i) => ({
       name: i.name,
