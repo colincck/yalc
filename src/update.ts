@@ -12,6 +12,8 @@ export interface UpdatePackagesOptions {
   // if need just to restore retreated packages
   restore?: boolean
 }
+
+// 该函数作用：主要是更新目标仓库的依赖 以及 找出已经将该包删除的目标仓库
 export const updatePackages = async (
   packages: string[], // 包名
   options: UpdatePackagesOptions
