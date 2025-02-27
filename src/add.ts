@@ -147,6 +147,8 @@ export const addPackages = async (
     }
 
     let replacedVersion = ''
+    // 配置了 workspaces（例如 monorepo 或 pnpm-workspaces下），yalc 任务应该由pm去管理包
+    // 因此 yalc 只会将包复制到专用目录，而不会在 node_modules 中创建符号链接或者复制包内容，也不会修改 package.json 里的内容
     if (doPure) {
       if (!options.pure) {
         const defaultPureMsg =
@@ -169,8 +171,9 @@ export const addPackages = async (
         )} purely`
       )
     }
+    // 非纯净模式（没有workspaces）
     if (!doPure) {
-      const destModulesDir = join(workingDir, 'node_modules', name) //node_modules里包的位置
+      const destModulesDir = join(workingDir, 'node_modules', name) // node_modules里包的位置 目标仓库
       // 如果之前该依赖是符号链接，则直接删除
       if (options.link || options.linkDep || isSymlink(destModulesDir)) {
         fs.removeSync(destModulesDir)
