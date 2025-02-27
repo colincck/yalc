@@ -261,12 +261,14 @@ export const addPackages = async (
     // 读.yalc里包的 yalc.sig 文件 
     const signature = readSignatureFile(destYalcCopyDir) // form index.ts
     runPmScript('postyalc.' + packageName)
+
+    // addedInstallsP 函数返回值
     return {
-      signature,
-      name,
-      version,
-      replaced: replacedVersion,
-      path: options.workingDir,
+      signature, //签名
+      name, // 包名
+      version, // 版本
+      replaced: replacedVersion, // 替换前的版本
+      path: options.workingDir, // 工作路径
     }
   })
 
