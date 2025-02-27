@@ -93,8 +93,11 @@ export const publishPackage = async (options: PublishPackageOptions) => {
     `${publishedPkg.name}@${publishedPkg.version} published in store.`
   )
 
+  // 参数中有push
   if (options.push) {
+    // 读取yalc存储仓库的文件
     const installationsConfig = readInstallationsFile()
+    // 存储对象中找到依赖该包的项目路径
     const installationPaths = installationsConfig[pkg.name] || []
     const installationsToRemove: PackageInstallation[] = []
     for (const workingDir of installationPaths) {
