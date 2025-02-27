@@ -93,7 +93,7 @@ yargs
     },
   })
   .command({
-    command: 'publish',
+    command: 'publish', // 发布包到本地
     describe: 'Publish package in yalc local repo',
     builder: () => {
       return yargs
@@ -110,7 +110,7 @@ yargs
     },
   })
   .command({
-    command: 'push',
+    command: 'push', //发布后会把包推送到所有已安装的项目
     describe:
       'Publish package in yalc local repo and push to all installations',
     builder: () => {
@@ -129,7 +129,7 @@ yargs
     },
   })
   .command({
-    command: 'installations',
+    command: 'installations', // 查看和清理 installations 文件
     describe: 'Work with installations file: show/clean',
     builder: () => {
       return yargs.boolean(['dry'])
@@ -150,7 +150,7 @@ yargs
     },
   })
   .command({
-    command: 'add',
+    command: 'add', // 添加yalc 包，同时修改 package.json 依赖
     describe: 'Add package from yalc repo to the project',
     builder: () => {
       return yargs
@@ -175,7 +175,7 @@ yargs
     },
   })
   .command({
-    command: 'link',
+    command: 'link', // 用于以符号链接的方式安装包
     describe: 'Link package from yalc repo to the project',
     builder: () => {
       return yargs.default(rcArgs).help(true)
@@ -189,7 +189,7 @@ yargs
     },
   })
   .command({
-    command: 'update',
+    command: 'update', // 更新当前项目中已添加的 yalc 包
     describe: 'Update packages from yalc repo',
     builder: () => {
       return yargs
@@ -206,7 +206,7 @@ yargs
     },
   })
   .command({
-    command: 'restore',
+    command: 'restore', // 用于恢复之前被“撤退”（retreat）掉的包。
     describe: 'Restore retreated packages',
     builder: () => {
       return yargs
@@ -223,7 +223,7 @@ yargs
     },
   })
   .command({
-    command: 'remove',
+    command: 'remove', // 从项目中彻底移除指定包，同时更新 package.json 与锁文件 retreat 表示移除但保留在锁文件中（以便后续恢复）
     describe: 'Remove packages from the project',
     builder: () => {
       return yargs.boolean(['retreat', 'all']).default(rcArgs).help(true)
@@ -237,7 +237,7 @@ yargs
     },
   })
   .command({
-    command: 'retreat',
+    command: 'retreat', // 移除yalc的依赖但保留在锁文件中（以便后续恢复）
     describe:
       'Remove packages from project, but leave in lock file (to be restored later)',
     builder: () => {
@@ -252,7 +252,7 @@ yargs
     },
   })
   .command({
-    command: 'check',
+    command: 'check', //检查当前项目的 package.json 是否存在通过 yalc 添加的本地依赖（例如防止误提交）
     describe: 'Check package.json for yalc packages',
     builder: () => {
       return yargs.boolean(['commit']).usage('check usage here').help(true)
@@ -270,7 +270,7 @@ yargs
     },
   })
   .command({
-    command: 'dir',
+    command: 'dir', //显示yalc的存储系统目录
     describe: 'Show yalc system directory',
     handler: () => {
       console.log(getStoreMainDir())
