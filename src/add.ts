@@ -58,9 +58,10 @@ const checkPnpmWorkspace = (workingDir: string) => {
   return fs.existsSync(join(workingDir, 'pnpm-workspace.yaml'))
 }
 
+// 目标仓库关联yalc的包
 export const addPackages = async (
-  packages: string[],
-  options: AddPackagesOptions
+  packages: string[], //yalc的包
+  options: AddPackagesOptions // 对应配置项
 ) => {
   if (!packages.length) return
   const workingDir = options.workingDir
