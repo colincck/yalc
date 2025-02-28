@@ -102,6 +102,7 @@ export const publishPackage = async (options: PublishPackageOptions) => {
     const installationsToRemove: PackageInstallation[] = []
     for (const workingDir of installationPaths) {
       console.info(`Pushing ${pkg.name}@${pkg.version} in ${workingDir}`)
+      // updatePackages 会返回已经将该依赖删除了的仓库，但表中还存在该仓库
       const installationsToRemoveForPkg = await updatePackages([pkg.name], {
         replace: options.replace,
         workingDir,
