@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import fs from 'fs-extra'
 import ignore from 'ignore'
+// 根据 npm 发布规则获取将要打包的文件列表
 import npmPacklist from 'npm-packlist'
 import { dirname, join } from 'path'
 
@@ -14,6 +15,7 @@ import {
 
 const shortSignatureLength = 8
 
+// 计算文件哈希 是否发生变化
 export const getFileHash = (srcPath: string, relPath: string = '') => {
   return new Promise<string>(async (resolve, reject) => {
     const stream = fs.createReadStream(srcPath)
@@ -26,6 +28,7 @@ export const getFileHash = (srcPath: string, relPath: string = '') => {
   })
 }
 
+// 复制文件到目标目录，并返回文件哈希
 const copyFile = async (
   srcPath: string,
   destPath: string,
@@ -35,6 +38,7 @@ const copyFile = async (
   return getFileHash(srcPath, relPath)
 }
 
+// 对象属性映射 用于 package.json 中的 dependencies 转换
 const mapObj = <T, R, K extends string>(
   obj: Record<K, T>,
   mapValue: (value: T, key: K) => R
@@ -49,6 +53,7 @@ const mapObj = <T, R, K extends string>(
   }, {})
 }
 
+// 确保在 workspace 环境中，包引用的版本被正确替换为真实版本
 const resolveWorkspaceDepVersion = (
   version: string,
   pkgName: string,
@@ -76,6 +81,7 @@ const resolveWorkspaceDepVersion = (
   }
 }
 
+// 解析 workspace 依赖的真实版本号
 const resolveWorkspaces = (
   pkg: PackageManifest,
   workingDir: string
@@ -108,6 +114,8 @@ const resolveWorkspaces = (
   }
 }
 
+// 修改 package.json 用于发布， 移除 prepare、prepublish、devDependencies
+// 保证包的干净和轻量
 const modPackageDev = (pkg: PackageManifest) => {
   return {
     ...pkg,
@@ -122,6 +130,7 @@ const modPackageDev = (pkg: PackageManifest) => {
   }
 }
 
+// 规范化路径
 const fixScopedRelativeName = (path: string) => path.replace(/^\.\//, '')
 
 export const copyPackageToStore = async (options: {
@@ -133,6 +142,7 @@ export const copyPackageToStore = async (options: {
   workspaceResolve?: boolean
 }): Promise<string | false> => {
   const { workingDir, devMod = true } = options
+  // 读工作路径的 package.json
   const pkg = readPackageManifest(workingDir)
 
   if (!pkg) {
@@ -145,13 +155,17 @@ export const copyPackageToStore = async (options: {
     pkg.version
   )
 
+  // 读取忽略文件
   const ignoreFileContent = readIgnoreFile(workingDir)
-
+// 生成ignore规则
   const ignoreRule = ignore().add(ignoreFileContent)
+
+  // 获取 npm 发布文件列表
   const npmList: string[] = await (await npmPacklist({ path: workingDir })).map(
     fixScopedRelativeName
   )
-
+  
+// 根据忽略规则过滤文件
   const filesToCopy = npmList.filter((f) => !ignoreRule.ignores(f))
   if (options.content) {
     console.info('Files included in published content:')
@@ -160,6 +174,7 @@ export const copyPackageToStore = async (options: {
     })
     console.info(`Total ${filesToCopy.length} files.`)
   }
+  // 复制文件到store
   const copyFilesToStore = async () => {
     await fs.remove(storePackageStoreDir)
     return Promise.all(
@@ -174,6 +189,8 @@ export const copyPackageToStore = async (options: {
         )
     )
   }
+  
+  // 计算整体文件签名  如果加了参数 changed，则计算每个文件的hash，不执行复制操作，否则直接复制并获取hash列表
   const hashes = options.changed
     ? await Promise.all(
         filesToCopy
